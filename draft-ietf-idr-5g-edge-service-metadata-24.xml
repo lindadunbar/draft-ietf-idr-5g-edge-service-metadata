@@ -132,31 +132,34 @@
       the Metadata about 5G low latency edge services directly attached to the
       egress routers. 5G <xref target="TS.23.501-3GPP"/>is characterized by
       having edge services closer to the Cell Towers reachable by Local Data
-      Networks (LDN). From IP network perspective, the 5G LDN is a limited
+      Networks (LDN). From an IP network perspective, the 5G LDN is a limited
       domain <xref target="RFC8799"/> with edge services a few hops away from
       the ingress nodes. Only selective UE services are considered as 5G low
       latency edge services.</t>
 
       <t>Note: The proposed edge service Metadata Path Attribute are not
-      intended for the best-effort services reachable via the public internet.
+      intended for the best-effort services reachable via the public Internet.
       The information carried by the Metadata Path Attribute can be used by
       the ingress routers to make path selections for selective low latency
       services based on not only the network distance but also the running
       environment of the edge cloud sites. The goal is to improve latency and
       performance for 5G ultra-low latency services.</t>
 
-      <t>The extension is targeted for a single domain with RR controlling the
-      propagation of the BGP UPDATE. The edge service Metadata Path Attribute
+      <t>This extension is targeted for a single domain with a BGP Route
+      Reflector (RR) <xref target="RFC4456"/>  controlling the
+      propagation of the BGP UPDATEs. The edge service Metadata Path Attribute
       is only attached to the low latency services (routes) hosted in the 5G
-      edge cloud sites, which are only a small subset of services initiated
+      edge cloud sites. These routes are only a small subset of services initiated
       from UEs, not for UEs accessing many internet sites.</t>
 
       <t>While the proposed Metadata Path Attribute is particularly beneficial
-      for low latency services, the metadata path attributes can be expanded
+      for low latency services, the Metadata Path Attributes can be expanded
       to propagate information about GPU availability, power, or other
       resources necessary for compute-intensive services such as AI and
       machine learning. This flexibility makes it a valuable tool for a wide
       range of applications beyond just low latency services.</t>
+      <!-- XXX JMH - this paragraph hints "we can do more with this".  However,
+      it also opens the proposal outside of the limited domain targeting. -->
     </section>
 
     <section title="Conventions used in this document">
@@ -208,10 +211,10 @@
       information on computing resources such as CPU/GPU. They can also be an
       abstract metric from these detailed parameters to indicate the resource
       status of the edge site. There could be more metrics about the running
-      environment being attached to the Metadata Path Attribute, e.g., some of
-      the metrics being discussed by the CATS WG. This document illustrates a
-      few examples of Sub-TLVs of the metrics under the edge service Metadata
-      Path Attribute:</t>
+      environment being attached to the Metadata Path Attribute; e.g., some of
+      the metrics being discussed by the IETF CATS Working Group. This document
+      illustrates a few examples of Sub-TLVs of the metrics under the edge
+      service Metadata Path Attribute:</t>
 
       <list style="hanging">
         <t hangText="-">the site physical availability index</t>
@@ -227,7 +230,7 @@
       path selections.</t>
 
       <section title="Metadata Influenced BGP Path Selection">
-        <t>When an ingress router receives BGP updates for the same IP prefix
+        <t>When an ingress router receives BGP UPDATEs for the same IP prefix
         from multiple egress routers, all these egress routers' loopback
         addresses are considered as the next hops for the IP prefix. For the
         selected low latency edge services, the ingress router BGP engine
@@ -243,15 +246,18 @@
 
       <section title="Ingress Router Forwarding Behavior">
         <t>When the ingress router receives a packet and does a lookup on the
-        route in the FIB, it gets the destination prefix's whole path. It
-        encapsulates the packet destined towards the optimal egress node.</t>
+	route in the FIB, it determines the destination prefix's entire path
+	including the optimal egress node.  The ingress router encapsulates the
+	packet destined towards the optimal egress node.</t>
+	<!-- XXX JMH - this is the first time that encapsulation is mentioned.  Encapsulated how? -->
 
         <t>For subsequent packets belonging to the same flow, the ingress
         router needs to forward them to the same egress router unless the
-        selected egress router is no longer reachable. Keeping packets from
-        one flow to the same egress router, a.k.a. Flow Affinity, is supported
+        selected egress router is no longer reachable. Forwarding packets for a particular
+        flow to the same egress router, also known as Flow Affinity, is supported
         by many commercial routers. Most registered EC services have
-        relatively short flows.</t>
+        relatively short-lived flows.</t>
+	<!-- XXX JMH - here we inconsistently say egress node and router.  Pick one. -->
 
         <t>How Flow Affinity is implemented is out of the scope for this
         document.</t>
@@ -267,13 +273,14 @@
         from a neighboring router to derive the optimal Next Hop for this
         route. The detailed algorithm is out of the scope of this
         document.</t>
+	<!-- XXX JMH - is this a BGP Next Hop or a FIB's next hop? -->
       </section>
     </section>
 
     <section title="Edge Service Metadata Encoding">
       <section title="Metadata Path Attribute">
         <t>The Metadata Path Attribute is an optional non-transitive BGP Path
-        attribute to carry metrics and metadata about the edge services
+        attribute that carries metrics and metadata about the edge services
         attached to the egress router. The Metadata Path Attribute, to be
         assigned by IANA <xref target="RFC2042"/>, consists of a set of
         Sub-TLVs, and each Sub-TLV contains information for specific metrics
@@ -289,29 +296,29 @@
           target="RFC4360"/>, NEXT_HOP, Tunnel Encapsulation Path Attribute
           <xref target="RFC9012"/>, etc.</t>
 
-          <t>The metadata Path Attribute has the following
+          <t>The Metadata Path Attribute has the following
           characteristics:</t>
 
           <list style="hanging">
             <t hangText="-">Non-transitive</t>
 
             <t hangText="-">Boundary node filtering SHOULD be deployed to
-            remove the BGP Metadata Path attribute at the administrative
+            remove the BGP Metadata Path Attribute at the administrative
             boundary to prevent the distribution of the BGP Metadata Path
             Attribute beyond its intended scope of applicability.</t>
 
             <t hangText="-">Can be packed with both IPv4 and IPv6 NLRI corresponding to SAFI values 1 (Unicast)[RFC4760], 2 (Multicast) [RFC4760], 4 (MPLS Labels)[RFC8277], 65 (VPN) [RFC4364], 128 (MPLS-labeled VPN) [RFC4364] [RFC8277], 129 (Multicast VPN) [RFC6513], 133 (MPLS-based VPLS) [RFC4761], 134 (EVPN) [RFC7432], and IPv6 Anycast <xref target="RFC4786"/>.</t>
 
-            <t hangText="-">MUST contain at least one metadata Sub-TLV.
+            <t hangText="-">MUST contain at least one Metadata Sub-TLV.
             Multiple Metadata Sub-TLVs can be included in a Metadata Path
             Attribute in one BGP UPDATE message. The choice of the Sub-TLVs
-            present in the BGP Metadata Path attribute is determined by the
+            present in the BGP Metadata Path Attribute is determined by the
             local policies. Multiple Sub-TLVs may be carried by a single BGP
             Metadata Path Attribute.</t>
           </list>
 
           <t>The metrics Sub-TLVs included in the Metadata Path Attribute
-          apply to all the address families carried in the NLRI field of the
+          applies to all of the address families carried in the NLRI field of the
           BGP UPDATE message <xref target="RFC4271"/>. For a multi-protocol
           BGP UPDATE message <xref target="RFC4760"/> <xref
           target="RFC7606"/>, the metrics Sub-TLVs included in the Metadata
@@ -321,16 +328,23 @@
 
         <section title=" Metadata Path Attribute Processing">
           <t>A BGP speaker that advertises a path received from one of its
-          neighbors SHOULD advertise the BGP Metadata Path attribute received
+          neighbors SHOULD advertise the BGP Metadata Path Attribute received
           with the path without modification as long as the BGP Metadata Path
-          attribute was acceptable. If the path did not come with a BGP
-          Metadata Path attribute, the speaker MAY attach a BGP Metadata
+          Attribute was acceptable. If the path did not come with a BGP
+          Metadata Path Attribute, the speaker MAY attach a BGP Metadata
           Attribute to the path if configured to do so.</t>
+	  <!-- XXX JMH - this is a place where the procedures need to be
+	  subject to the Limited Domain principle.  How do you want to discuss
+	  that check here? -->
 
-          <t>A BGP Peer receiving a BGP Metadata Path attribute should ignore
+          <t>A BGP Peer receiving a BGP Metadata Path Attribute should ignore
           Sub-TLVs with unknown types and process the recognized Sub-TLVs. BGP
           Peers should not delete any Sub-TLV from the BGP Metadata Path
           Attribute.</t>
+	  <!-- XXX JMH - The issue with inconsistently ignoring features that
+	  impact path selection across and AS is you can end up with forwarding
+	  loops.  Discussing this consistency needs to be at least broached
+	  here. -->
         </section>
 
         <section title="Sub-TLVs Data Processing">
@@ -340,18 +354,16 @@
           configured with an algorithm to combine the recognized metrics
           carried by the Sub-TLVs within a Metadata Path Attribute of the
           received BGP UPDATE message.</t>
+	  <!-- XXX JMH - This text is really an error handling consideration.
+	  Perhaps consider renaming the section to note that? -->
         </section>
 
         <section title="Metadata Path Attribute Handling Procedure">
           <t>The Metadata Path Attribute MUST contain at least one metadata
           Sub-TLV. Multiple Metadata Sub-TLVs can be included in a Metadata
           Path Attribute in one BGP UPDATE message. The content of the
-          Sub-TLVs present in the BGP Metadata Path attribute is determined by
-          the configuration. When a BGP Speaker does not recognize some of the
-          Sub-TLVs within one Metadata Path Attribute in a BGP UPDATE message,
-          the BGP Speaker should forward the received BGP UPDATE message
-          without any change if the transitive bit is set to 1 <xref
-          target="RFC4271"/>. The domain ingress nodes should process the
+          Sub-TLVs present in the BGP Metadata Path Attribute is determined by
+          configuration.  The domain ingress nodes should process the
           recognized Sub-TLVs carried by the Metadata Path Attribute and
           ignore the unrecognized Sub-TLVs. By default, a BGP speaker does not
           report any unrecognized Sub-TLVs within a Metadata Path Attribute
@@ -359,18 +371,42 @@
           The ingress node should be configured with an algorithm to combine
           the recognized metrics carried by the Sub-TLVs within a Metadata
           Path Attribute of the received BGP UPDATE message.</t>
+	  <!-- XXX JMH "combine" is odd.  Perhaps utilize? -->
+
+	  <!-- XXX JMH - the text below doesn't make much bgp sense.  Path
+	  attributes apply to all of the NLRI carried in the update message.  I
+	  recommend striking this section and have commented it out to flag
+	  doing so.
 
           <t>The metrics Sub-TLVs included in the Metadata Path Attribute
-          apply to all the address families carried in the NLRI field of the
+          apply to all of the address families carried in the NLRI field of the
           BGP UPDATE message <xref target="RFC4271"/>. For a multi-protocol
           BGP UPDATE message <xref target="RFC4760"/> <xref
           target="RFC7606"/>, the metrics Sub-TLVs included in the Metadata
           Path Attribute apply to all the AFIs/SAFIs address families carried
           by the MP_REACH_NLRI.</t>
+	  XXX JMH -->
         </section>
       </section>
 
       <section title="Metadata Path Attribute TLV">
+	<!-- XXX JMH - this section is problematic.  While I could certainly
+	clean it up to address this comment, the presence of the "reserved"
+	field is worrying.
+
+	In general, we don't document the attr flags, or attribute in BGP
+	packet diagrams.
+	The motivation is that we don't want to accidentally redefine the
+	semantics of the core protocol field.
+
+	Similarly, the length field is NOT guaranteed to be one octet and that
+	depends on the implementation's encoding of the field.  Generally, the
+	implementation should use a one octet length field if the data is <=
+	255 octets in length.  However, implementations MUST be able to decode
+	a two octet length that contains data <= 255 in length.
+
+	If you want a RESERVED field in the path attribute, it's the first
+	octet of your data.  Is that what is really wanted here? -->
         <figure anchor="Metadata Path Attribute"
                 title="Metadata Path Attribute">
           <artwork><![CDATA[  
@@ -420,6 +456,12 @@
           </list></t>
 
         <t>All values in the Sub-TLVs are unsigned 32 bits integers.</t>
+	<!-- XXX JMH - this "all values are 32 bits integers" has been
+	previously flagged as being wrong.  In several cases it spans multiple
+	32-bit sections.  Also, this sentence presumes you've talked about the
+	structure of sub-tlvs.  I suggest simply deleting this sentence. -->
+	<!-- XXX JMH there's obviously intent here to have a common sub-tlv
+	structure.  Define that before using it in later sections. -->
       </section>
 
       <section title="The Site Preference Index Sub-TLV">
@@ -435,33 +477,52 @@
         <t>It is out of the scope of this document how the preference index is
         determined or configured.</t>
 
-        <t>The Preference Index Sub-TLV has the following format:</t>
+        <t>The Site Preference Index Sub-TLV has the following format:</t>
 
-        <figure anchor="Preference Index Sub-TLV"
-                title="Preference Index Sub-TLV">
+        <figure anchor="Site Preference Index Sub-TLV"
+                title="Site Preference Index Sub-TLV">
           <artwork><![CDATA[ 
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |Site-Preference-Index Sub-Type | Length        | Reserved      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                   Preference Index value                      |
+  |                Site Preference Index value                    |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
 	]]></artwork>
         </figure>
+	<!-- XXX JMH - The normative text below should indicate the field
+	lengths.  PDU diagrams disagreeing with the normative text is
+	unfortunately common in IETF and can lead to interop issues.
+
+	If the sub-tlv format is described above as discussed in a prior
+	comment, there is no need to re-state the sub-type and length sizes -
+	but also no harm in doing so. -->
 
         <t><list style="hanging">
             <t hangText="-">Site-Preference-Index Sub-Type =1 (specified in
             this document).</t>
+	    <!-- XXX JMH - style comment: This is a sub-tlv of value 1, which is
+	    assigned for site-preference index.  It is not a a site-preference
+	    index sub-tlv.  Consider how you would like to name such things.
+	    -->
 
             <t hangText="-">Length: Specifies the total length in octets of
             the value field (not including the Type and Length fields). The
             Length = 5 for the Site-Preference-Index Sub-Type.</t>
+	    <!-- XXX JMH for these fixed-length fields, I'd suggest just saying
+	    "the length is 5". -->
 
             <t hangText="-">Reserved: Reserved for future use.</t>
+	    <!-- XXX JMH - The document needs to discuss what goes in reserved fields.  For example, "In this version of the document, the Reserved field MUST be set to zero and MUST be ignored upon receipt.  Received values MUST be propagated without change." -->
 
-            <t hangText="-">Preference Index value: 1 .. (2^32-1); the higher
-            the value, the more preference the site. Preference Index value ==
+            <t hangText="-">Site Preference Index value: 1 .. (2^32-1); the higher
+            the value, the more preference for the site. Site Preference Index value ==
             0 is reserved.</t>
+	    <!-- XXX JMH - Somewhere in the document you'll need to define what
+	    happens if you receive the reserved value of zero. -->
+	    <!-- Somewhere in the document you need to define what the byte
+	    order is; i.e. network byte order.  A good place to have done this
+	    is in the definition of sub-tlvs, or in each value. -->
           </list></t>
       </section>
 
@@ -474,7 +535,7 @@
         example, a power outage to a pod can cause the Site Physical
         Availability Index to be 0% for all the routes in the pod. Partial
         fiber cut to a row of shelves can cause the Site Physical Availability
-        Index to 50% for all the routes in those shelves. The value is 0-100,
+        Index to be 50% for all the routes in those shelves. The value is 0-100,
         with 100% indicating the site is fully functional, 0% indicating the
         site is entirely out of service, and 50% indicating the site is 50%
         degraded.</t>
@@ -482,17 +543,22 @@
         <t>It is recommended to assign each route with one Site-ID. Depending
         on deployment, one DC can use POD number as Site-ID, another DC can
         use Row of Shelves as the Site-ID.</t>
+	<!-- XXX JMH - What happens if more than one site id is present?
+	Also, suggest making the above a "for example". -->
 
-        <t>Cloud Site/Pod failures and degradation include but are not limited
+        <t>Cloud Site/Pod failures and degradation include, but are not limited
         to, a site degradation or an entire site going down caused by a
-        variety of reasons, such as fiber cut connecting to the site or among
+        variety of reasons. Examples include fiber cuts impacting a  site or among
         pods, cooling failures, insufficient backup power, cyber threats
         attacks, too many changes outside of the maintenance window, etc.
-        Fiber-cut is not uncommon within a Cloud site or between sites.</t>
+        Fiber-cuts are not uncommon within a Cloud site or between sites.</t>
 
         <t>When those failure events happen, the edge (egress) router is
         running fine. Therefore, the ingress routers with paths to the egress
         router can't use BFD to detect the failures.</t>
+	<!-- XXX JMH - This depends on how BFD is being used.  BFD can report
+	"concatenated paths down" in some circumstances.  Please describe where
+	BFD is being used in this scenario. -->
 
         <t>When there is a failure occurring at an edge site (or a pod), many
         instances can be impacted. In addition, the routes (i.e., the IP
@@ -510,6 +576,9 @@
         associated with the Side-ID, is generated by the egress routers with
         the egress routers' loopback address as the NLRI.</t>
 
+	<!-- XXX JMH - I've flagged this before: You don't go from having TLV
+	to not having TLV in a protocol.  Make this a TLV even if the length is
+	fixed. -->
         <t>The Site Physical Availability Index Sub-TLV has fixed length of 8
         Octets, including the Type field. Therefore a Length field is not
         needed.</t>
@@ -550,11 +619,11 @@
             different address families or NLRIs. There could be multiple sites
             connected to one egress router (a.k.a. Edge DC GW).</t>
 
-            <t hangText="Site Availability Percentage (16 bits):">When the
+            <t hangText="- Site Availability Percentage (16 bits):">When the
             RouteFlag-I is 1, the Site Availability Percentage is ignored by
             the Ingress routers. When the RouteFlag I is set to 0, the Site
             Availability Percentage represents the percentage of the site
-            availability for all the routes associated with the Site-ID, e.g.,
+            availability for all the routes associated with the Site-ID; e.g.,
             100%, 50%, or 0%. When a site goes dark, the Index is set to 0. 50
             means 50% functioning. When the value is outside the 0-100% range,
             the value carried in this Sub-TLV is ignored.</t>
@@ -570,24 +639,29 @@
 
         </section>
 
+	<!-- XXX JMH - the point below about "from router-X" ignores route
+	reflectors. Is this only intended to work when received directly? -->
         <section title="BGP UPDATE with standalone Site Availability Index">
-          <t>Upon receiving a BGP update message from Router-X, containing the
+          <t>Upon receiving a BGP UPDATE message from Router-X, containing the
           Metadata Path Attribute with the Site Physical Availability Index
           Sub-TLV, the next-hop should be the loopback of Router-X. The local
-          BGP peer uses local policy to evaluate the route (prefix and path
-          attributes). When the local policy processes the Metadata Attribute
+          BGP peer uses local policy to evaluate the route (prefix and Path
+          Attributes). When the local policy processes the Metadata Attribute
           with the Site Physical availability, it will use the site
           availability index to efficiently reduce or increase the preference
           for all BGP routes with the Router-X next-hop (loopback).</t>
 
           <t>The BGP UPDATE with a standalone Site Availability Index is NOT
           intended for resolving NextHop.</t>
+	  <!-- XXX JMH - the sentence above is confusing.  Aren't the routes
+	  containing the meta data intended to be loopback routes used for
+	  resolving service prefixes?  What's intended here? -->
         </section>
       </section>
 
       <section title="Service Delay Prediction">
         <t>It is desirable for an ingress router to select a site with the
-        shortest processing time for an ultra-low latency service. But it is
+        shortest processing time for an ultra-low latency service. However, it is
         not easy to predict which site has "the fastest processing time" or
         "the shortest processing delay" for an incoming service request
         because:</t>
@@ -617,6 +691,7 @@
         faster on Site-A even if Site-A is overutilized.</t>
 
         <t><list style="hanging">
+	    <!-- XXX JMH - was there a particular intent on using a different bullet style here? -->
             <t hangText="o">Server utilization for the server where the
             instance is instantiated.</t>
 
@@ -626,7 +701,7 @@
             <t hangText="o">The number of databases that the service instance
             will access.</t>
 
-            <t hangText="o">The memory utilization of the databases</t>
+            <t hangText="o">The memory utilization of the databases.</t>
           </list></t>
 
         <t>The remaining available resource at a site is a more reasonable
@@ -702,6 +777,9 @@
             target="RFC5905"/>. When the L-flag is 1, then it is a 64-bit
             format, otherwise it is a 32-bit short format.</t>
           </list>
+	  <!-- XXX JMH - It's necessary to discuss what happens when the F/L
+	  bits are set weirdly.  In general, it seems that the L bit is ignored
+	  when the F bit is set to 1? -->
         </section>
 
       
@@ -719,7 +797,7 @@
             <artwork><![CDATA[ 
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  | Raw-Measurement Sub-Type | Length        |  Reserved     |
+  | Raw-Measurement Sub-Type      | Length        |  Reserved     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                           Value                               |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -741,6 +819,10 @@
 
         <t/>
 
+	<!-- XXX JMH - in the PDU diagram below, the sub-type is one octet
+	instead of the two we've seen elsewhere?  Where are the various total
+	number fields defined?  Is this meant to be a new sub-sub-tlv? This
+	section isn't really complete.-->
         <figure anchor="Raw Load Sub-TLV"
                 title="Packets and Bytes Measurements Sub-TLV">
           <artwork><![CDATA[ 
@@ -826,6 +908,8 @@
 
           <t hangText="- Res (4 bits): ">Reserved for future use.</t>
 
+	  <!-- XXX JMH - MT is another case where describing that this is a
+	  4-bit unsigned integer makes it clear what the contents will be -->
           <t hangText="- MT (4 bits): ">Metric Type. This document defines a
           default metric type as value 0, indicating this is the normalized
           metric derived by multiple types of metrics. The rules to derive
@@ -833,8 +917,8 @@
           defined by per service. Other Metric Types could be defined by other documents in the future.</t>
 
           <t hangText="- SO-CapValue (32 bits):">The Service-Oriented
-          Capability Abstract Value is an integer between 0 and 2**32-1.
-          Bigger number means larger capability, and a value of 0 indicates
+          Capability Abstract Value is an integer between 0 and 2^32-1.
+          A larger number means higher capability, and a value of 0 indicates
           the site has the lowest relative capability for the service. The
           method used to derive this value is beyond the scope of this
           document.</t>
@@ -938,6 +1022,14 @@
       receiving a packet destined for the Service ID, the ingress router must
       refresh the Timer. The ingress router must send a BGP Withdraw UPDATE
       for the Service ID upon expiration of the Timer.</t>
+      <!-- XXX JMH - this text regarding RT-Constrain is very confusing.  RTC
+      operates on BGP routes having route target extended communities.  This
+      document isn't suggesting to use the existing route targets defined in
+      RFC 4360 and using that type/subtype is probably inappropriate.  It'd be
+      better to define a new extended community for this feature. 
+
+      Additionally it's not clear what these timers are and how they interact
+      with service ids. -->
 
       <t><xref target="RFC4684"/>specifies SAFI=132 for the Route Target
       membership NLRI Advertisements.</t>
@@ -962,6 +1054,7 @@
           octets, excluding the sub-Type and the length field. The Length is 6
           for the AS-Scope Sub-Type.</t>
 
+	  <!-- XXX JMH need the usual text about the reserved value contentss. -->
           <t hangText="- Reserved (8 bits):">Reserved for future use.</t>
 
           <t hangText="- In-Scope AS-Value (32 bits):">AS value that is recognized by the BGP speaker in the domain.</t>
@@ -973,14 +1066,27 @@
         <t> - AS Recognition: The router will check the AS value in the AS-Scope Sub-TLV.</t>
 
         <t> - If the AS value matches the local AS or a recognized AS in its configuration, the router will process the update as usual. If the AS value does not match or is not recognized, the router MUST drop the BGP UPDATE message containing the AS-Scope Sub-TLV.</t>
+	<!-- XXX JMH the desired value here is RFC 7606 style "treat as
+	withdraw", not "drop the update" -->
 		
+	<!-- XXX JMH - I think you can drop the forwaring rules section. The
+	motivation is explained previously.
+
+	Your TLVs don't have transitivity in them and the entire containing
+	metadata path attribute is non-transitive.  I think you can drop the
+	next sentence as well.
+
+	I'm leaving the text in place in case your intent is different than
+	those two observations.
+
         <t> - Forwarding Rules: The AS-Scope Sub-TLV ensures that the Metadata Path Attribute is only propagated within the intended ASes, thereby preventing unauthorized dissemination of sensitive metadata. </t>
 		<t> - Non-Transitive: The AS-Scope Sub-TLV is marked as non-transitive to ensure it is not forwarded beyond the intended scope.</t>
+		-->
 		
 		<t> Example Usage:</t>
-        <t>Consider a scenario where a router in AS 65001 advertises a BGP UPDATE message with the AS-Scope Sub-TLV set to AS 65001. When another router in AS 65002 receives this update, it will check the AS-Scope Sub-TLV value:</t>
+        <t>Consider a scenario where a router in AS 65001 advertises a BGP UPDATE message with the AS-Scope Sub-TLV set to AS 65001. When another router in AS 65002 receives this UPDATE, it will check the AS-Scope Sub-TLV value:</t>
 
-        <t>Since AS 65002 does not match the AS value 65001, the router in AS 65002 will drop the update, preventing the metadata from leaking into AS 65002.</t>
+        <t>Since AS 65002 does not match the AS value 65001, the router in AS 65002 will drop the UPDATE, preventing the metadata from leaking into AS 65002.</t>
 		
 		<t>This mechanism ensures that the metadata remains confined to the intended ASes, enhancing the security and control over the propagation of BGP metadata.</t>
 		
@@ -994,16 +1100,21 @@
 
 	  <t> While the mechanism detailed in this document aims to provide dynamic metrics like Capacity Availability Index, Site Delay Prediction Index, Service Delay Prediction Index, and Raw Measurement to optimize path selection, it is essential to consider the broader implications of metric-induced churn. Particularly, in the context of routes used for BGP nexthop resolution (e.g., labeled unicast), frequent changes in these metrics can lead to significant churn not only for the prefixes carrying the data but also for dependent routes.</t>
 
-      <t>This behavior is analogous to the impacts observed with RSVP auto-bandwidth, which can introduce considerable instability within a network. Such route churn can propagate through the network, causing a cascade of updates and potential route flaps, thereby affecting overall network stability and performance.</t>
+      <t>This behavior is analogous to the impacts observed with RSVP auto-bandwidth, which can introduce considerable instability within a network. Such route churn can propagate through the network, causing a cascade of UPDATEs and potential route flaps, thereby affecting overall network stability and performance.</t>
 
-	  <t>To mitigate these effects, network operators should carefully manage the advertisement intervals of these dynamic metrics, ensuring they are set to avoid unnecessary churn. The default minimum interval for metrics change advertisement, set at 30 seconds, is designed to balance responsiveness with stability. However, in scenarios with higher sensitivity to route stability, operators may consider increasing this interval further to reduce the frequency of updates.</t>
+	  <t>To mitigate these effects, network operators should carefully manage the advertisement intervals of these dynamic metrics, ensuring they are set to avoid unnecessary churn. The default minimum interval for metrics change advertisement, set at 30 seconds, is designed to balance responsiveness with stability. However, in scenarios with higher sensitivity to route stability, operators may consider increasing this interval further to reduce the frequency of UPDATEs.</t>
 
 	  <t> Furthermore, operators should implement robust route damping and filtering policies to control the propagation of changes and minimize the impact on dependent routes. By acknowledging and planning for these broader impacts, the mechanism can be deployed more effectively, ensuring optimal performance without compromising network stability.</t>
+
+	  <!-- XXX JMH - You don't really mean "damping" here.  Route flap
+	  damping responds to high degrees of churn by suppressing the prefix
+	  (withdraw).  What's your intent here? -->
       
 	  <t>Significant load changes at EC data centers can be triggered by
       short-term gatherings of UEs, like conventions, lasting a few hours or
       days. Therefore, the load metrics change rate can be in the
       magnitude of hours or days.</t>
+      <!-- XXX JMH - Do you mean that the high change range can last for this period of time? -->
 	  
     </section>
 
@@ -1012,6 +1123,8 @@
       target="RFC7606"/>, a BGP speaker should ignore the Metadata Path
       Attribute if more than one Metadata Path Attribute is within one BGP
       Update message.</t>
+      <!-- XXX JMH - as previously flagged, this is core BGP procedure and
+      should not be repeated in this document. -->
 
       <t>The Metadata Path Attribute contains a sequence of Sub-TLVs. The
       Metadata Path Attribute's length minus 1 determines the total number of
@@ -1021,9 +1134,12 @@
       is not the case, the TLV should be considered malformed, and the
       "Treat-as-withdraw" procedure of <xref target="RFC7606"/> is
       applied.</t>
+      <!-- XXX JMH - this potentially addresses my question about the
+      "reserved" field at the front of the new attribute.  Is that your intent
+      here? -->
 
       <t>When more than one sub-TLV is present in a Metadata Path Attribute,
-      they are processed independently. Suppose a Metadata Path attribute can
+      they are processed independently. Suppose a Metadata Path Attribute can
       be parsed correctly but contains a Sub-TLV whose type is not recognized
       by a particular BGP speaker; that BGP speaker MUST NOT consider the
       attribute malformed. Instead, it MUST interpret the attribute as if that
@@ -1035,7 +1151,7 @@
 
     <section title="Manageability Considerations">
       <t>The edge service Metadata described in this document are only
-      intended for propagating between Ingress and egress routers of one
+      intended for propagating between ingress and egress routers of one
       single BGP Administrative Domain [RFC1136]. A single BGP Administrative Domain can consist of one AS or multiple ASes.</t>
 	<t>Only
       the selective services by UEs are considered as 5G edge services. The 5G
@@ -1055,36 +1171,38 @@
       following practice should be enforced:</t>
 
       <list style="hanging">
-        <t hangText="-">The Metadata Path Attribute originator sets the
-        attribute as Non-transitive when sending the BGP UPDATE message to its
-        correspoinding RR. According to <xref target="RFC4271"/>,
-        Non-transitive Path Attributes are only guaranteed to be dropped
-        during BGP route propagation by implementations that do not recognize
+	<t hangText="-">The Metadata Path Attribute is non-transitive.  Per
+	<xref target="RFC4271"/>, non-transitive Path Attributes are dropped
+	during BGP route propagation by implementations that do not recognize
         them.</t>
 
-        <t hangText="-">The RR (Route Reflector) can append the NO-ADVERTISE
+        <t hangText="-">Route Reflectors can append the NO-ADVERTISE
         well-known community to the BGP UPDATE message with Metadata Path
         Attribute when forwarding to the ingress routers. By doing so, the
-        Route Reflector signals to ingress nodes that the associated route's
+        Route Reflector signals to ingress nodes that the routes with the
         Metadata Path Attribute should not be further advertised beyond their
         scope. This precautionary measure ensures that the receiver of the BGP
-        UPDATE message refrains from forwarding the received update to its
+        UPDATE message refrains from forwarding the received UPDATE to its
         peers, preventing the undesired propagation of the information carried
         by the Metadata Path Attribute.</t>
       </list>
 
+      <!-- XXX JMH - 5291, ORFs, require a ORF to filter on.  No new ORFs are
+      defined in this document.  You discuss other filtering below and probably
+      should just clean up this paragraph and discuss most of it below. -->
       <t>BGP Route Filtering or BGP Route Policies <xref target="RFC5291"/>
-      can also be used to ensure that BGP update messages with Metadata Path
+      can also be used to ensure that BGP UPDATE messages with Metadata Path
       Attribute attached do not get forwarded out of the administrative
       domain. BGP route filtering <xref target="RFC5291"/> allows network
       administrators to control the advertisements and acceptance of BGP
       routes, ensuring that specific routes do not leak outside the intended
       administrative domain. Here are the steps to achieve this:</t>
 
+      <!-- XXX jmh - the items below are all saying forms of the same thing. What your intent likely should be is to say "route filtering is implemented on matching on X".  Your examples of X are the prefix, or other route attributes.  Matching on the metadata route attribute is a NEW piece of policy.  The non-transitive nature of the attribute means that routers that don't understand the attribute won't propagate it, but if you want to suppress the advertisement of the prefixes that contain that attribute at such ignorant routers, it'll have to be on another attribute.  For routers that are aware of the new metadata attribute, you can say that matching on the metadata attribute is a new form of policy that can be used to implement the filtering intent. -->
       <list style="hanging">
         <t hangText="-">Use Route Filtering: Implement route filtering
         policies on the ingress routers to restrict the propagation of BGP
-        update messages for the registered 5G edge services beyond the
+        UPDATE messages for the registered 5G edge services beyond the
         administrative domain. You can use access control lists (ACLs), prefix
         lists, or route maps to filter the BGP routes classified as the 5G
         edge services, which need the Metadata Path Attributes to be
@@ -1126,6 +1244,7 @@
 
           <t hangText="Registration Procedure:">Expert Review <xref
           target="RFC8126"/>.</t>
+	  <!-- XXX JMH - who did you have in mind for the expert reviewers? -->
 
           <t>Detailed Expert Review procedure will be added per <xref
           target="RFC8126"/>.</t>
@@ -1179,7 +1298,7 @@
     </section>
 
     <section title="Acknowledgements">
-      <t>Acknowledgements to Jeff Hass, Tom Petch, Adrian Farrel, Alvaro
+      <t>Acknowledgements to Jeff Haas, Tom Petch, Adrian Farrel, Alvaro
       Retana, Robert Raszuk, Sue Hares, Shunwan Zhuang, Donald Eastlake, Dhruv
       Dhody, Cheng Li, DongYu Yuan, and Vincent Shi for their suggestions and
       contributions.</t>
@@ -1253,6 +1372,8 @@
       </reference>
 
       <?rfc include="reference.RFC.2042"?>
+
+      <?rfc include="reference.RFC.4456"?>
 
       <?rfc include="reference.RFC.4684"?>
 
@@ -1361,7 +1482,7 @@
         router can have preconfigured policies on aggregating various metrics
         from different paths and the corresponding policies in selecting a
         path for forwarding the packets received from ingress routers. The
-        aggregated metrics can be carried in the BGP Update messages instead
+        aggregated metrics can be carried in the BGP UPDATE messages instead
         of detailed measurements to reduce the entries advertised by the
         control plane and dampen the routes update in the forwarding plane.
         Upon receiving packets from ingress routers, the egress router can use
@@ -1432,8 +1553,15 @@ Cost-i=min(w *(----------------) + (1-w) *(------------------))
         process for path selection.</t>
       </section>
 
+	<!-- XXX JMH - nothing in this document discusses integration into the
+	custom decision process mechanism.  I'd suggest dropping the reference
+	to it.  However, what you do need to do is discuss how this algorithm
+	influences BGP route selection for the routes that contain the metadata
+	attribute, how such routes compare vs. routes that DO NOT contain it.
+	Also, this is a strong piece of normative behavior and needs to be in
+	the main part of the document.-->
       <section title="Integrating with BGP decision process">
-        <t>When an ingress router receives BGP updates for the same IP address
+        <t>When an ingress router receives BGP UPDATEs for the same IP address
         from multiple egress routers, all those egress routers are considered
         as the next hops for the IP address. For the selected services
         configured to be influenced by the edge service Metadata, the ingress
