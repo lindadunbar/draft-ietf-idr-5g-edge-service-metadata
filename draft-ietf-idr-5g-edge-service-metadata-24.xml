@@ -248,7 +248,7 @@
         <t>When the ingress router receives a packet and does a lookup on the
 	route in the FIB, it determines the destination prefix's entire path
 	including the optimal egress node.  The ingress router encapsulates the
-	packet destined towards the optimal egress node.</t>
+	packet destined towards the optimal egress router.</t>
 	<!-- XXX JMH - this is the first time that encapsulation is mentioned.  Encapsulated how? -->
 
         <t>For subsequent packets belonging to the same flow, the ingress
@@ -257,7 +257,6 @@
         flow to the same egress router, also known as Flow Affinity, is supported
         by many commercial routers. Most registered EC services have
         relatively short-lived flows.</t>
-	<!-- XXX JMH - here we inconsistently say egress node and router.  Pick one. -->
 
         <t>How Flow Affinity is implemented is out of the scope for this
         document.</t>
@@ -270,10 +269,9 @@
 
         <t>If the UE maintains the same IP address when anchored to a new UPF,
         the directly connected ingress router might use the information passed
-        from a neighboring router to derive the optimal Next Hop for this
+        from a neighboring router to derive the optimal BGP Next Hop for this
         route. The detailed algorithm is out of the scope of this
         document.</t>
-	<!-- XXX JMH - is this a BGP Next Hop or a FIB's next hop? -->
       </section>
     </section>
 
@@ -285,6 +283,10 @@
         assigned by IANA <xref target="RFC2042"/>, consists of a set of
         Sub-TLVs, and each Sub-TLV contains information for specific metrics
         of the edge services.</t>
+
+	<t>The fields within the Metadata Path Attribute and its Sub-TLVs MUST
+	use network byte order (big-endian), where the most significant byte is
+	transmitted first.</t>
 
         <section title="Metadata Path Attribute Characteristics">
           <t>Only a small subset of BGP UPDATE messages include the Metadata
@@ -326,25 +328,31 @@
           by the MP_REACH_NLRI.</t>
         </section>
 
-        <section title=" Metadata Path Attribute Processing">
-          <t>A BGP speaker that advertises a path received from one of its
-          neighbors SHOULD advertise the BGP Metadata Path Attribute received
-          with the path without modification as long as the BGP Metadata Path
-          Attribute was acceptable. If the path did not come with a BGP
-          Metadata Path Attribute, the speaker MAY attach a BGP Metadata
-          Attribute to the path if configured to do so.</t>
-	  <!-- XXX JMH - this is a place where the procedures need to be
-	  subject to the Limited Domain principle.  How do you want to discuss
-	  that check here? -->
+        <section title="Metadata Path Attribute Processing">
+	  <t>A BGP speaker that advertises a BGP UPDATE message received from
+	  one of its neighbors SHOULD advertise the BGP Metadata Path Attribute
+	  received with the UPDATE message without modification only when
+	  forwarding to peers within the same domain. Otherwise, the Metadata
+	  Path Attribute should be removed. If the UPDATE message did not come
+	  with a BGP Metadata Path Attribute, the speaker MAY attach a BGP
+	  Metadata Path Attribute to the UPDATE message, if configured to do so,
+	  provided that the modification adheres to the domain's policies and
+	  security guidelines.</t>
 
           <t>A BGP Peer receiving a BGP Metadata Path Attribute should ignore
           Sub-TLVs with unknown types and process the recognized Sub-TLVs. BGP
           Peers should not delete any Sub-TLV from the BGP Metadata Path
           Attribute.</t>
-	  <!-- XXX JMH - The issue with inconsistently ignoring features that
-	  impact path selection across and AS is you can end up with forwarding
-	  loops.  Discussing this consistency needs to be at least broached
-	  here. -->
+
+	  <t>To prevent forwarding loops and ensure consistent routing
+	  decisions, it is essential that all BGP peers within an Autonomous
+	  System (AS) adopt a unified approach to handling BGP Metadata Path
+	  Attributes. Specifically, BGP peers should consistently ignore
+	  Sub-TLVs with unknown types while processing the recognized Sub-TLVs.
+	  Additionally, BGP peers should refrain from deleting any Sub-TLV from
+	  the BGP Metadata Path attribute. This ensures that all peers have a
+	  common understanding of the routing information and reduces the risk
+	  of routing inconsistencies that could lead to forwarding loops.</t>
         </section>
 
         <section title="Sub-TLVs Data Processing">
@@ -368,10 +376,9 @@
           ignore the unrecognized Sub-TLVs. By default, a BGP speaker does not
           report any unrecognized Sub-TLVs within a Metadata Path Attribute
           unless configured to send a notification to its management system.
-          The ingress node should be configured with an algorithm to combine
+          The ingress node should be configured with an algorithm to consider
           the recognized metrics carried by the Sub-TLVs within a Metadata
           Path Attribute of the received BGP UPDATE message.</t>
-	  <!-- XXX JMH "combine" is odd.  Perhaps utilize? -->
 
 	  <!-- XXX JMH - the text below doesn't make much bgp sense.  Path
 	  attributes apply to all of the NLRI carried in the update message.  I
@@ -512,17 +519,15 @@
 	    <!-- XXX JMH for these fixed-length fields, I'd suggest just saying
 	    "the length is 5". -->
 
-            <t hangText="-">Reserved: Reserved for future use.</t>
-	    <!-- XXX JMH - The document needs to discuss what goes in reserved fields.  For example, "In this version of the document, the Reserved field MUST be set to zero and MUST be ignored upon receipt.  Received values MUST be propagated without change." -->
+	    <t hangText="-">Reserved: Reserved for future use. In this version
+	    of the document, the Reserved field MUST be set to zero and MUST be
+	    ignored upon receipt.  Received values MUST be propagated without
+	    change.</t>
 
             <t hangText="-">Site Preference Index value: 1 .. (2^32-1); the higher
             the value, the more preference for the site. Site Preference Index value ==
-            0 is reserved.</t>
-	    <!-- XXX JMH - Somewhere in the document you'll need to define what
-	    happens if you receive the reserved value of zero. -->
-	    <!-- Somewhere in the document you need to define what the byte
-	    order is; i.e. network byte order.  A good place to have done this
-	    is in the definition of sub-tlvs, or in each value. -->
+	    0 is reserved, and the Site-Preference-Index Sub-TLV should be
+	    ignored when 0 is received..</t>
           </list></t>
       </section>
 
@@ -691,32 +696,31 @@
         faster on Site-A even if Site-A is overutilized.</t>
 
         <t><list style="hanging">
-	    <!-- XXX JMH - was there a particular intent on using a different bullet style here? -->
-            <t hangText="o">Server utilization for the server where the
+            <t hangText="-">Server utilization for the server where the
             instance is instantiated.</t>
 
-            <t hangText="o">The network utilization for the links to the
+            <t hangText="-">The network utilization for the links to the
             server where the instance is instantiated.</t>
 
-            <t hangText="o">The number of databases that the service instance
+            <t hangText="-">The number of databases that the service instance
             will access.</t>
 
-            <t hangText="o">The memory utilization of the databases.</t>
+            <t hangText="-">The memory utilization of the databases.</t>
           </list></t>
 
         <t>The remaining available resource at a site is a more reasonable
         indication of process delay for future service requests.</t>
 
         <t><list style="hanging">
-            <t hangText="o">The remaining available Server resources.</t>
+            <t hangText="-">The remaining available Server resources.</t>
 
-            <t hangText="o">The remaining available network utilization for
+            <t hangText="-">The remaining available network utilization for
             the links to the server where the instance is instantiated.</t>
 
-            <t hangText="o">The number of databases that the service instance
+            <t hangText="-">The number of databases that the service instance
             will access.</t>
 
-            <t hangText="o">The remaining storage available for the
+            <t hangText="-">The remaining storage available for the
             databases.</t>
           </list></t>
 
@@ -908,13 +912,11 @@
 
           <t hangText="- Res (4 bits): ">Reserved for future use.</t>
 
-	  <!-- XXX JMH - MT is another case where describing that this is a
-	  4-bit unsigned integer makes it clear what the contents will be -->
-          <t hangText="- MT (4 bits): ">Metric Type. This document defines a
+          <t hangText="- MT (4 bits): ">Metric Type, an unsigned 4-bit integer. This document defines a
           default metric type as value 0, indicating this is the normalized
           metric derived by multiple types of metrics. The rules to derive
           the normalized metric are out of scope of this document and
-          defined by per service. Other Metric Types could be defined by other documents in the future.</t>
+          defined by per service. Additional Metric Types may be defined in future documents.</t>
 
           <t hangText="- SO-CapValue (32 bits):">The Service-Oriented
           Capability Abstract Value is an integer between 0 and 2^32-1.
@@ -1104,17 +1106,11 @@
 
 	  <t>To mitigate these effects, network operators should carefully manage the advertisement intervals of these dynamic metrics, ensuring they are set to avoid unnecessary churn. The default minimum interval for metrics change advertisement, set at 30 seconds, is designed to balance responsiveness with stability. However, in scenarios with higher sensitivity to route stability, operators may consider increasing this interval further to reduce the frequency of UPDATEs.</t>
 
-	  <t> Furthermore, operators should implement robust route damping and filtering policies to control the propagation of changes and minimize the impact on dependent routes. By acknowledging and planning for these broader impacts, the mechanism can be deployed more effectively, ensuring optimal performance without compromising network stability.</t>
+	  <t> Furthermore, operators should implement robust filtering policies to control the propagation of changes and minimize the impact on dependent routes. By acknowledging and planning for these broader impacts, the mechanism can be deployed more effectively, ensuring optimal performance without compromising network stability.</t>
 
-	  <!-- XXX JMH - You don't really mean "damping" here.  Route flap
-	  damping responds to high degrees of churn by suppressing the prefix
-	  (withdraw).  What's your intent here? -->
-      
 	  <t>Significant load changes at EC data centers can be triggered by
       short-term gatherings of UEs, like conventions, lasting a few hours or
-      days. Therefore, the load metrics change rate can be in the
-      magnitude of hours or days.</t>
-      <!-- XXX JMH - Do you mean that the high change range can last for this period of time? -->
+      days. Therefore, a high metrics change rate can persist for hours or days.</t>
 	  
     </section>
 
