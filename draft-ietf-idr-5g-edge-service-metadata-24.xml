@@ -1033,13 +1033,6 @@
     </section>
 
     <section title="Validation and Error Handling">
-      <t>In addition to the Error Handling procedure described in <xref
-      target="RFC7606"/>, a BGP speaker should ignore the Metadata Path
-      Attribute if more than one Metadata Path Attribute is within one BGP
-      Update message.</t>
-      <!-- XXX JMH - as previously flagged, this is core BGP procedure and
-      should not be repeated in this document. -->
-
       <t>The Metadata Path Attribute contains a sequence of Sub-TLVs. The
       Metadata Path Attribute's length minus 1 determines the total number of
       octets for all the Sub-TLVs under the Metadata Path Attribute. The sum
