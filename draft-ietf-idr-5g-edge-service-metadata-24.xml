@@ -330,14 +330,6 @@
             local policies. Multiple Sub-TLVs may be carried by a single BGP
             Metadata Path Attribute.</t>
           </list>
-
-          <t>The metrics Sub-TLVs included in the Metadata Path Attribute
-          applies to all of the address families carried in the NLRI field of the
-          BGP UPDATE message <xref target="RFC4271"/>. For a multi-protocol
-          BGP UPDATE message <xref target="RFC4760"/> <xref
-          target="RFC7606"/>, the metrics Sub-TLVs included in the Metadata
-          Path Attribute apply to all the AFIs/SAFIs address families carried
-          by the MP_REACH_NLRI.</t>
         </section>
 
         <section title="Metadata Path Attribute Processing">
