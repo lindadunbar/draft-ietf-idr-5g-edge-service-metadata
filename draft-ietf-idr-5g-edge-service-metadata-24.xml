@@ -1025,17 +1025,11 @@
     </section>
 
     <section title="Validation and Error Handling">
-      <t>The Metadata Path Attribute contains a sequence of Sub-TLVs. The
-      Metadata Path Attribute's length minus 1 determines the total number of
-      octets for all the Sub-TLVs under the Metadata Path Attribute. The sum
-      of the lengths from all the Sub-TLVs under the Metadata Path Attribute
-      plus 1 should equal the length of the Metadata Path Attribute. If this
-      is not the case, the TLV should be considered malformed, and the
-      "Treat-as-withdraw" procedure of <xref target="RFC7606"/> is
-      applied.</t>
-      <!-- XXX JMH - this potentially addresses my question about the
-      "reserved" field at the front of the new attribute.  Is that your intent
-      here? -->
+      <t>The Metadata Path Attribute is an optional non-transitive BGP Path
+      attribute that carries metrics and metadata about the edge services
+      attached to the egress router. The Metadata Path Attribute, to be
+      assigned by IANA , consists of a set of Sub-TLVs, and each Sub-TLV
+      contains information for specific metrics of the edge services.</t>
 
       <t>When more than one sub-TLV is present in a Metadata Path Attribute,
       they are processed independently. Suppose a Metadata Path Attribute can
