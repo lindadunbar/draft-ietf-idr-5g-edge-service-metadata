@@ -470,7 +470,7 @@
         <t>When those failure events happen, the edge (egress) router is
         running fine. Therefore, the ingress routers with paths to the egress
         router can't use BFD to detect the failures.</t>
-	<!-- XXX JMH - This depends on how BFD is being used.  BFD can report
+	<!-- XXX JMH Issue 36 - This depends on how BFD is being used.  BFD can report
 	"concatenated paths down" in some circumstances.  Please describe where
 	BFD is being used in this scenario. -->
 
