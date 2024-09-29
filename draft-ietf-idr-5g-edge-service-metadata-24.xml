@@ -434,10 +434,6 @@
         <t><list style="hanging">
             <t hangText="-">Site-Preference-Index Sub-Type (16 bits): 1 (specified in
             this document).</t>
-	    <!-- XXX JMH - style comment: This is a sub-tlv of value 1, which is
-	    assigned for site-preference index.  It is not a a site-preference
-	    index sub-tlv.  Consider how you would like to name such things.
-	    -->
 
             <t hangText="-">Length (8 bits): Specifies the total length in octets of
             the value field (not including the Type and Length fields).</t>
