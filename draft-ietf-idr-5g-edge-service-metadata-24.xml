@@ -755,7 +755,7 @@
 	metadata. Each type of raw measurement will have a unique sub type
 	value assigned at the time of its specification.</t>
 
-	<!-- XXX JMH - in the PDU diagram below, the sub-type is one octet
+	<!-- XXX JMH Issue 38 - in the PDU diagram below, the sub-type is one octet
 	instead of the two we've seen elsewhere?  Where are the various total
 	number fields defined?  Is this meant to be a new sub-sub-tlv? This
 	section isn't really complete.-->
