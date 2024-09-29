@@ -1076,7 +1076,7 @@
         by the Metadata Path Attribute.</t>
       </list>
 
-      <!-- XXX JMH - 5291, ORFs, require a ORF to filter on.  No new ORFs are
+      <!-- XXX JMH Issue 4 - 5291, ORFs, require a ORF to filter on.  No new ORFs are
       defined in this document.  You discuss other filtering below and probably
       should just clean up this paragraph and discuss most of it below. -->
       <t>BGP Route Filtering or BGP Route Policies <xref target="RFC5291"/>
