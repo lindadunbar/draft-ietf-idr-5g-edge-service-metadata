@@ -693,7 +693,7 @@
             target="RFC5905"/>. When the L-flag is 1, then it is a 64-bit
             format, otherwise it is a 32-bit short format.</t>
           </list>
-	  <!-- XXX JMH - It's necessary to discuss what happens when the F/L
+	  <!-- XXX JMH Issue 37 - It's necessary to discuss what happens when the F/L
 	  bits are set weirdly.  In general, it seems that the L bit is ignored
 	  when the F bit is set to 1? -->
         </section>
