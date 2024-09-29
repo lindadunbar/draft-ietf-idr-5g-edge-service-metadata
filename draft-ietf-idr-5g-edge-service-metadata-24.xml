@@ -570,7 +570,7 @@
 
           <t>The BGP UPDATE with a standalone Site Availability Index is NOT
           intended for resolving NextHop.</t>
-	  <!-- XXX JMH - the sentence above is confusing.  Aren't the routes
+	  <!-- XXX JMH Issue #13 - the sentence above is confusing.  Aren't the routes
 	  containing the meta data intended to be loopback routes used for
 	  resolving service prefixes?  What's intended here? -->
         </section>
