@@ -1437,7 +1437,7 @@ Cost-i=min(w *(----------------) + (1-w) *(------------------))
         process for path selection.</t>
       </section>
 
-	<!-- XXX JMH - nothing in this document discusses integration into the
+	<!-- XXX JMH Issue 40 - nothing in this document discusses integration into the
 	custom decision process mechanism.  I'd suggest dropping the reference
 	to it.  However, what you do need to do is discuss how this algorithm
 	influences BGP route selection for the routes that contain the metadata
