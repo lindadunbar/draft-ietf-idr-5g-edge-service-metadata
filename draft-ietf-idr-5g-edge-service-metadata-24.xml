@@ -341,7 +341,7 @@
 	  Metadata Path Attribute to the UPDATE message, if configured to do so,
 	  provided that the modification adheres to the domain's policies and
 	  security guidelines.</t>
-	  <!-- XXX JMH - this is a place where the procedures need to be
+	  <!-- XXX JMH Issue 34 - this is a place where the procedures need to be
 	  subject to the Limited Domain principle.  How do you want to discuss
 	  that check here? -->
 
