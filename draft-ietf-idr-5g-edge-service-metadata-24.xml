@@ -1005,20 +1005,6 @@
 
         <t> - If the AS value matches the local AS or a recognized AS in its configuration, the router will process the update as usual. If the AS value does not match or is not recognized, the router SHOULD NOT process the Metadata Path Attribute values in the BGP UDPATE and SHOULD NOT propagate the received BGP UPDATE to other nodes.  I.e., treat-as-withdraw behavior will be used.</t>
 		
-	<!-- XXX JMH - I think you can drop the forwaring rules section. The
-	motivation is explained previously.
-
-	Your TLVs don't have transitivity in them and the entire containing
-	metadata path attribute is non-transitive.  I think you can drop the
-	next sentence as well.
-
-	I'm leaving the text in place in case your intent is different than
-	those two observations.
-
-        <t> - Forwarding Rules: The AS-Scope Sub-TLV ensures that the Metadata Path Attribute is only propagated within the intended ASes, thereby preventing unauthorized dissemination of sensitive metadata. </t>
-		<t> - Non-Transitive: The AS-Scope Sub-TLV is marked as non-transitive to ensure it is not forwarded beyond the intended scope.</t>
-		-->
-		
 		<t> Example Usage:</t>
         <t>Consider a scenario where a router in AS 65001 advertises a BGP UPDATE message with the AS-Scope Sub-TLV set to AS 65001. When another router in AS 65002 receives this UPDATE, it will check the AS-Scope Sub-TLV value:</t>
 
