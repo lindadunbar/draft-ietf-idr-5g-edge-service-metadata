@@ -425,7 +425,7 @@
 
             <t hangText="-">Length (8 bits): Specifies the total length in octets of
             the value field (not including the Type and Length fields).</t>
-	    <!-- XXX JMH for these fixed-length fields, I'd suggest just saying
+	    <!-- XXX JMH Issue 35 - for these fixed-length fields, I'd suggest just saying
 	    "the length is 5". -->
 
 	    <t hangText="-">Reserved: Reserved for future use. In this version
