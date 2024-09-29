@@ -375,9 +375,6 @@
 	  help the ingress node make informed decisions about the optimal path
 	  to the next-hop, considering both traditional routing factors and the
 	  additional insights provided by the Metadata.</t>
-
-	  <!-- XXX JMH - This text is really an error handling consideration.
-	  Perhaps consider renaming the section to note that? -->
         </section>
 
         <section title="Metadata Path Attribute Handling Procedure">
