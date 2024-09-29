@@ -431,14 +431,6 @@
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
 	]]></artwork>
         </figure>
-	<!-- XXX JMH - The normative text below should indicate the field
-	lengths.  PDU diagrams disagreeing with the normative text is
-	unfortunately common in IETF and can lead to interop issues.
-
-	If the sub-tlv format is described above as discussed in a prior
-	comment, there is no need to re-state the sub-type and length sizes -
-	but also no harm in doing so. -->
-
         <t><list style="hanging">
             <t hangText="-">Site-Preference-Index Sub-Type (16 bits): 1 (specified in
             this document).</t>
