@@ -248,8 +248,20 @@
         <t>When the ingress router receives a packet and does a lookup on the
 	route in the FIB, it determines the destination prefix's entire path
 	including the optimal egress node.  The ingress router encapsulates the
-	packet destined towards the optimal egress router.</t>
-	<!-- XXX JMH - this is the first time that encapsulation is mentioned.  Encapsulated how? -->
+	packet destined towards the optimal egress router.
+	For routes that carry the Metadata Path Attribute but lack the 
+	<xref target="RFC9012">Tunnel Encapsulation Path Attribute </xref>, it
+	is recommended that the ingress router encapsulate the original packet
+	using an IP-in-IP header. This encapsulation ensures that intermediate
+	nodes not supporting the Metadata Path Attribute do not forward the
+	packet to unintended destinations. The outer header should set the
+	destination address to the optimal egress router and the source address
+	to the ingress router.</t>
+
+	<t>For routes without the Metadata Path Attribute, no changes are
+	required. Packets are forwarded according to existing behavior:
+	encapsulation is applied when Tunnel Attributes are present, and
+	parkets are forwarded without encapsulation when they are not.</t>
 
         <t>For subsequent packets belonging to the same flow, the ingress
         router needs to forward them to the same egress router unless the
@@ -309,7 +321,7 @@
             boundary to prevent the distribution of the BGP Metadata Path
             Attribute beyond its intended scope of applicability.</t>
 
-            <t hangText="-">Can be packed with both IPv4 and IPv6 NLRI corresponding to SAFI values 1 (Unicast)[RFC4760], 2 (Multicast) [RFC4760], 4 (MPLS Labels)[RFC8277], 65 (VPN) [RFC4364], 128 (MPLS-labeled VPN) [RFC4364] [RFC8277], 129 (Multicast VPN) [RFC6513], 133 (MPLS-based VPLS) [RFC4761], 134 (EVPN) [RFC7432], and IPv6 Anycast <xref target="RFC4786"/>.</t>
+            <t hangText="-">Can be packed with both IPv4 and IPv6 NLRI corresponding to SAFI values 1 (Unicast)<xref target="RFC4760"/>, 2 (Multicast) <xref target="RFC4760"/>, 4 (MPLS Labels)<xref target="RFC8277"/>, 65 (VPN) <xref target="RFC4364"/>, 128 (MPLS-labeled VPN) <xref target="RFC4364"/> <xref target="RFC8277"/>, 129 (Multicast VPN) <xref target="RFC6513"/>, 133 (MPLS-based VPLS) <xref target="RFC4761"/>, 134 (EVPN) <xref target="RFC7432"/>, and IPv6 Anycast <xref target="RFC4786"/>.</t>
 
             <t hangText="-">MUST contain at least one Metadata Sub-TLV.
             Multiple Metadata Sub-TLVs can be included in a Metadata Path
@@ -338,6 +350,9 @@
 	  Metadata Path Attribute to the UPDATE message, if configured to do so,
 	  provided that the modification adheres to the domain's policies and
 	  security guidelines.</t>
+	  <!-- XXX JMH - this is a place where the procedures need to be
+	  subject to the Limited Domain principle.  How do you want to discuss
+	  that check here? -->
 
           <t>A BGP Peer receiving a BGP Metadata Path Attribute should ignore
           Sub-TLVs with unknown types and process the recognized Sub-TLVs. BGP
@@ -362,6 +377,14 @@
           configured with an algorithm to combine the recognized metrics
           carried by the Sub-TLVs within a Metadata Path Attribute of the
           received BGP UPDATE message.</t>
+
+	  <t>To ensure consistent route selection, a deployment-specific
+	  algorithm should be configured across all ingress nodes to factor in
+	  the Metadata's contribution alongside existing policies. This will
+	  help the ingress node make informed decisions about the optimal path
+	  to the next-hop, considering both traditional routing factors and the
+	  additional insights provided by the Metadata.</t>
+
 	  <!-- XXX JMH - This text is really an error handling consideration.
 	  Perhaps consider renaming the section to note that? -->
         </section>
@@ -376,99 +399,10 @@
           ignore the unrecognized Sub-TLVs. By default, a BGP speaker does not
           report any unrecognized Sub-TLVs within a Metadata Path Attribute
           unless configured to send a notification to its management system.
-          The ingress node should be configured with an algorithm to consider
+          The ingress router should be configured with an algorithm to consider
           the recognized metrics carried by the Sub-TLVs within a Metadata
           Path Attribute of the received BGP UPDATE message.</t>
-
-	  <!-- XXX JMH - the text below doesn't make much bgp sense.  Path
-	  attributes apply to all of the NLRI carried in the update message.  I
-	  recommend striking this section and have commented it out to flag
-	  doing so.
-
-          <t>The metrics Sub-TLVs included in the Metadata Path Attribute
-          apply to all of the address families carried in the NLRI field of the
-          BGP UPDATE message <xref target="RFC4271"/>. For a multi-protocol
-          BGP UPDATE message <xref target="RFC4760"/> <xref
-          target="RFC7606"/>, the metrics Sub-TLVs included in the Metadata
-          Path Attribute apply to all the AFIs/SAFIs address families carried
-          by the MP_REACH_NLRI.</t>
-	  XXX JMH -->
         </section>
-      </section>
-
-      <section title="Metadata Path Attribute TLV">
-	<!-- XXX JMH - this section is problematic.  While I could certainly
-	clean it up to address this comment, the presence of the "reserved"
-	field is worrying.
-
-	In general, we don't document the attr flags, or attribute in BGP
-	packet diagrams.
-	The motivation is that we don't want to accidentally redefine the
-	semantics of the core protocol field.
-
-	Similarly, the length field is NOT guaranteed to be one octet and that
-	depends on the implementation's encoding of the field.  Generally, the
-	implementation should use a one octet length field if the data is <=
-	255 octets in length.  However, implementations MUST be able to decode
-	a two octet length that contains data <= 255 in length.
-
-	If you want a RESERVED field in the path attribute, it's the first
-	octet of your data.  Is that what is really wanted here? -->
-        <figure anchor="Metadata Path Attribute"
-                title="Metadata Path Attribute">
-          <artwork><![CDATA[  
-      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |AttFlag|Reserve|MetaDataPathAtt|Length(1 Octet)| Reserved      |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                                                               |
-     |         Value (multiple Metadata Sub-TLVs)                    |
-     |                                                               |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-	]]></artwork>
-        </figure>
-
-        <t><list style="hanging">
-            <t hangText="AttFlag:">4 bits Attribute flags as specified by <xref target="RFC4271"/>:</t>
-          </list> <list style="hanging">
-            <t hangText="-">The high-order bit (bit 0): set to 1.</t>
-
-            <t hangText="-">The second high-order bit (bit 1): set to 0 to
-            indicate that the Metadata Path Attribte is non-transitive. This
-            means that a BGP speaker that does not recognize the attribute
-            will not propagate it to other BGP peers <xref target="RFC4271"/>.
-            This non-transitive setting prevents the Metadata Path Attribute
-            from being leaked to peers outside the domain, ensuring it remains
-            contained within the set of BGP speakers that understand it.</t>
-
-            <t hangText="-">The third high-order bit (bit 2): same as
-            specified by <xref target="RFC4271"/>.</t>
-
-            <t hangText="-">The fourth high-order bit (bit 3): set to 0 to
-            indicate there is one octet for the Length field <xref
-            target="RFC4271"/>.</t>
-
-            <t hangText="-">The fifth-eighth high-order bits (bit 4~7) are
-            reserved.</t>
-          </list> <list style="hanging">
-            <t hangText="MetaDataPathAtt:">Metadata Path Attribute value: TBD1
-            (assigned by IANA).</t>
-
-            <t hangText="Length:">Specifies the length of the value field in
-            octets, not including the first three octets of the AttFlag, Type,
-            and Length fields. The Length value is the total length of the
-            Value field plus one reserved octet.</t>
-
-            <t hangText="Reserved:">For future expansion.</t>
-          </list></t>
-
-        <t>All values in the Sub-TLVs are unsigned 32 bits integers.</t>
-	<!-- XXX JMH - this "all values are 32 bits integers" has been
-	previously flagged as being wrong.  In several cases it spans multiple
-	32-bit sections.  Also, this sentence presumes you've talked about the
-	structure of sub-tlvs.  I suggest simply deleting this sentence. -->
-	<!-- XXX JMH there's obviously intent here to have a common sub-tlv
-	structure.  Define that before using it in later sections. -->
       </section>
 
       <section title="The Site Preference Index Sub-TLV">
@@ -506,16 +440,15 @@
 	but also no harm in doing so. -->
 
         <t><list style="hanging">
-            <t hangText="-">Site-Preference-Index Sub-Type =1 (specified in
+            <t hangText="-">Site-Preference-Index Sub-Type (16 bits): 1 (specified in
             this document).</t>
 	    <!-- XXX JMH - style comment: This is a sub-tlv of value 1, which is
 	    assigned for site-preference index.  It is not a a site-preference
 	    index sub-tlv.  Consider how you would like to name such things.
 	    -->
 
-            <t hangText="-">Length: Specifies the total length in octets of
-            the value field (not including the Type and Length fields). The
-            Length = 5 for the Site-Preference-Index Sub-Type.</t>
+            <t hangText="-">Length (8 bits): Specifies the total length in octets of
+            the value field (not including the Type and Length fields).</t>
 	    <!-- XXX JMH for these fixed-length fields, I'd suggest just saying
 	    "the length is 5". -->
 
@@ -545,11 +478,11 @@
         site is entirely out of service, and 50% indicating the site is 50%
         degraded.</t>
 
-        <t>It is recommended to assign each route with one Site-ID. Depending
-        on deployment, one DC can use POD number as Site-ID, another DC can
-        use Row of Shelves as the Site-ID.</t>
-	<!-- XXX JMH - What happens if more than one site id is present?
-	Also, suggest making the above a "for example". -->
+	<t>It is recommended to assign each route with one Site-ID. When a
+	route is associated with multiple Site-IDs, the latest BGP UPDATE will
+	override any previous associations. For example, one DC can use POD
+	number as Site-ID, another DC can use Row of Shelves as the
+	Site-ID.</t>
 
         <t>Cloud Site/Pod failures and degradation include, but are not limited
         to, a site degradation or an entire site going down caused by a
@@ -593,7 +526,7 @@
           <artwork><![CDATA[ 
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|      PhyAvailIdx Sub-Type     |I|         Reserved            |
+|      PhyAvailIdx Sub-Type     |     Length    |I|   Reserved  |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |        Site-ID (2 octets)     | Site Availability Percentage  |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -605,6 +538,9 @@
             Site-Physical-Availability-Index Sub-Type=2 (Specified in this
             document).</t>
 
+            <t hangText="-">Length (8 bits): Specifies the total length in octets of
+            the value field (not including the Type and Length fields).</t>
+
             <t hangText="Route-Flag I (1 bit):">is a flag bit. When set to 1,
             the Site Availability Index is for BGP speakers (receivers) to
             associate the routes with the Site-ID. The Site Availability
@@ -612,7 +548,7 @@
             (receivers) should apply the Site Availability Index value to all
             the routes associated with the Site-ID.</t>
 
-            <t hangText="Reserved (15 bits):">Reserved for future use. The
+            <t hangText="Reserved (7 bits):">Reserved for future use. The
             bits are set to zero upon transmission, and ignored upon
             reception.</t>
 
@@ -644,17 +580,17 @@
 
         </section>
 
-	<!-- XXX JMH - the point below about "from router-X" ignores route
-	reflectors. Is this only intended to work when received directly? -->
         <section title="BGP UPDATE with standalone Site Availability Index">
-          <t>Upon receiving a BGP UPDATE message from Router-X, containing the
-          Metadata Path Attribute with the Site Physical Availability Index
-          Sub-TLV, the next-hop should be the loopback of Router-X. The local
-          BGP peer uses local policy to evaluate the route (prefix and Path
-          Attributes). When the local policy processes the Metadata Attribute
-          with the Site Physical availability, it will use the site
-          availability index to efficiently reduce or increase the preference
-          for all BGP routes with the Router-X next-hop (loopback).</t>
+	  <t>A BGP UPDATE that includes the Site Availability Index Sub-TLV
+	  without specifying attached routes in the NLRI, but instead using the
+	  egress router's loopback address in the NLRI, is referred to as a
+	  standalone Site Availability Index BGP UPDATE. When an ingress router
+	  receives such a BGP UPDATE containing the Metadata Path Attribute
+	  with the standalone Site Physical Availability Index Sub-TLV from
+	  Router-X or its RR with the Originator-ID equal to Router-X, the
+	  ingress router SHOULD use the site availability index to efficiently
+	  reduce or increase the preference for all BGP routes attached to
+	  Router-X.</t>
 
           <t>The BGP UPDATE with a standalone Site Availability Index is NOT
           intended for resolving NextHop.</t>
@@ -750,22 +686,25 @@
           </figure>
 
           <list style="hanging">
-            <t hangText="- ServiceDelayPredict:">(Service Delay Predication)
-            Sub-type=3 (specified in this document).</t>
+            <t hangText="- ServiceDelayPredict Sub-Type (16 bits):"> 3 (specified in this document).</t>
 
-            <t hangText="- Length: ">specifies the total length in octets of
+            <t hangText="- Length (8 bits): ">specifies the total length in octets of
             the value field, not including the sub-Type and Length field. The
             value of Length can be 5 or 9 depends on what format the Service
             Delay Prediction Vlaue uses.</t>
 
-            <t hangText="- Flag (F): ">A single bit flag to indicate the
-            specific condition of the Service Delay Predication Value.</t>
+	    <t hangText="- Flag (F) (1 bit): ">Indicates whether the Service
+	    Delay is a timer value (F=0) or a relative value (F=1) where a
+	    higher value represents a longer delay</t>
 
-            <t hangText="- Flag (L): ">A single bit flag to indicate using
-            64-bit NTP Timestamp Format in Service Delay Prediction Value
-            field. It is valid only when F-flag is set to 0.</t>
+	    <t hangText="- Flag (L) (1 bit): ">Indicates the unit of
+	    measurement for the Service Delay Prediction Value. L=0 for 64-bit
+	    NTP Timestamp Format (valid only when F-flag is set to 0). L=1 for
+	    milliseconds (valid only when F-flag is set to 1).</t>
 
-            <t hangText="- Reserved (6 bits):">Reserved for future use.</t>
+	    <t hangText="- Reserved (6 bits):">These bits are reserved for
+	    future use and MUST be set to zero. Future documents may specify
+	    different uses for these bits.</t>
 
             <t
             hangText="- Service Delay Predication Value (when the Flag bit is set to 1):">an
@@ -796,7 +735,7 @@
 
         <t>Raw Measurement Sub-TLV has the following format:</t>
 
-        <t><figure anchor="Raw Load Measurement Sub-TLVs"
+        <t><figure anchor="Raw Measurement Sub-TLVs"
             title="Service Delay Prediction Raw Measurements Sub-TLV">
             <artwork><![CDATA[ 
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -808,63 +747,91 @@
 ]]></artwork>
           </figure></t>
 
-        <t>- Raw-Measurement Sub-Type =4 (specified in this document): Raw
-        measurements metadata from the edge service address.</t>
+	<t>- Raw-Measurement Sub-Type (16 bits): 4 (specified in this
+	document).  Indicating raw measurements metadata associated with the
+	edge service address.</t>
 
-        <t>- Length: specifies the total length in octets of the value field,
-        i.e., not including the Sub-Type, the Length fields.</t>
+	<t>- Length (8 bits): specifies the total length in octets of the value
+	field; i.e., not including the Sub-Type, the Length fields.</t>
 
-        <t>- Reserved: Reserved for future use.</t>
+	<t>- Reserved (8 bits):  These bits are reserved for future use and
+	MUST be set to zero. Future documents may specify different uses for
+	these bits.</t>
 
-        <t>- Value: The value fileds can contain multiple types of sub-TLVs,
-        which are used to describe the raw metadata.</t>
+	<t>- Value: The value fileds can contain multiple types of raw
+	measurements.</t>
 
         <t>A typical raw mesurement metadata sub-TLV is defined below.</t>
 
         <t/>
 
+	<t>This document specifies a single type of raw measurement metadata to
+	convey the total number of packets or bytes transmitted over a
+	specified period for a particular edge service address. When a Data DC
+	GW router cannot directly access the internal state of an edge service,
+	the volume of incoming traffic can be a reliable indicator of its load.
+	A sudden increase in packets or bytes can signal a surge in requests,
+	potentially leading to performance issues or resource constraints on
+	the service side.</t>
+
+	<t>To differentiate this measurement from others that may be defined in
+	the future, this document assigns a Sub-Type value of 1 to represent
+	the total packets and bytes transmitted to an edge service address.</t>
+
+	<t>Future documents may define additional types of raw measurement
+	metadata. Each type of raw measurement will have a unique sub type
+	value assigned at the time of its specification.</t>
+
 	<!-- XXX JMH - in the PDU diagram below, the sub-type is one octet
 	instead of the two we've seen elsewhere?  Where are the various total
 	number fields defined?  Is this meant to be a new sub-sub-tlv? This
 	section isn't really complete.-->
-        <figure anchor="Raw Load Sub-TLV"
-                title="Packets and Bytes Measurements Sub-TLV">
+        <figure anchor="Raw Packets or Bytes Measurement Sub-TLV"
+                title="Packets or Bytes Measurements Sub-TLV">
           <artwork><![CDATA[ 
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |    Sub-Type   | Length        |                  Reserved     |
+  |    Sub-Type   | Length        |B|                Reserved     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                   Measurement Period                          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-  |           total number of packets to the Edge Service         |
+  |   total number of packets (or bytes) to the Edge Service      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-  |           total number of packets from the Edge Service       |
+  |   total number of packets (or bytes) from the Edge Service    |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+  
-  |           total number of bytes to the Edge Service           |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-  |           total number of bytes from the Edge Service         |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
         </figure>
 
-        <t>- Sub-Type =4 (specified in this document): Type = 0, Raw
-        measurements of packets/bytes to/from the edge service address.</t>
+	<t>- Sub-Type (8 bits): 1 (specified in this document). Indicating raw
+	measurements of packets transmitted to or from the edge service
+	address.</t>
 
-        <t>- Length: specifies the total length in octets of the value field,
-        i.e., not including the Sub-Type, the Length fields. The value is
-        22.</t>
+	<t>- Length (8 bits): specifies the total length in octets of the value
+	field, i.e., not including the Sub-Type, the Length fields. The value
+	is 22.</t>
 
-        <t>- Reserved: Reserved for future use.</t>
+        <t>- Reserved (16 bits): These bits are reserved for future use and MUST be set to zero.</t>
 
         <t>- Measurement Period: BGP Update period in Seconds or
         user-specified period.</t>
 
-        <t>- Total number of pakcets and bytes: The receiver nodes can compute
-        the needed metrics, such as the Service Delay Prediction, for the
-        Service based on the raw measurements sent from the egress node and
-        preconfigured algorithms.</t>
+	<t>- B flag: If set to 0, the raw measurement is the number of packets.
+	If set to 1, the raw measurement is the number of bytes.</t>
 
+	<t>- Total number of packets to the Edge Service (32 bits): This field
+	specifies the total number of packets transmitted to the edge service
+	address over the specified measurement period.</t>
+
+	<t>- Total number of packets from the Edge Service (32 bits): This
+	field specifies the total number of packets from the edge service
+	address over the specified measurement period.</t>
+ 
         <t/>
+
+	 <t>The receiver nodes can compute the needed metrics, such as the
+	 Service Delay Prediction, for the service based on the raw
+	 measurements sent from the egress router and preconfigured
+	 algorithms.</t>
       </section>
 
       <section title="Service-Oriented Capability Sub-TLV">
@@ -902,21 +869,22 @@
         </figure>
 
         <list style="hanging">
-          <t hangText="- ServiceOriented Cap Sub-Type (16 bits):">Indicates
-          the Service-Oriented Capability Sub-type=5 (specified in this
-          document).</t>
+	  <t hangText="- ServiceOriented Cap Sub-Type (16 bits):"> 5 (specified
+	  in this document).</t>
 
           <t hangText="- Length (8 bits): ">Specifies the total length in
           octets, not including the sub-Type and Length fields. The Length = 5
           for the ServiceOriented Cap Sub-Type.</t>
 
-          <t hangText="- Res (4 bits): ">Reserved for future use.</t>
+	  <t hangText="- Res (4 bits): ">These bits are reserved for future use
+	  and MUST be set to zero.</t>
 
-          <t hangText="- MT (4 bits): ">Metric Type, an unsigned 4-bit integer. This document defines a
-          default metric type as value 0, indicating this is the normalized
-          metric derived by multiple types of metrics. The rules to derive
-          the normalized metric are out of scope of this document and
-          defined by per service. Additional Metric Types may be defined in future documents.</t>
+	  <t hangText="- MT (Metric Type)(4 bits): "> An unsigned 4 bits
+	  integer. When the MT value is set to 0, it indicates the SoCapValue
+	  field contains a normalized metric derived from multiple metric
+	  types. The rules for deriving this normalized metric are out of scope
+	  of this document and defined by per-service. Additional metric types
+	  may be defined in future documents.</t>
 
           <t hangText="- SO-CapValue (32 bits):">The Service-Oriented
           Capability Abstract Value is an integer between 0 and 2^32-1.
@@ -962,9 +930,8 @@
         </figure>
 
         <list style="hanging">
-          <t hangText="- ServiceOriented Avail Sub-Type:">(Service-Oriented
-          Available Resource Sub-Type) Sub-type=6 (specified in this
-          document).</t>
+	  <t hangText="- ServiceOriented Avail (Service-Oriented Available
+	  Resource) Sub-Type:">6 (specified in this document).</t>
 
           <t hangText="- Length (8 bits)">Specifies the total length in
           octets, excluding the sub-Type and the length field. The Length is 5
@@ -976,7 +943,8 @@
           value in this Sub-TLV is the abstract value of the available
           resource.</t>
 
-          <t hangText="- Res (3 bits):">Reserved for future use.</t>
+	  <t hangText="- Res (3 bits):">These bits are reserved for future use
+	  and MUST be set to zero.</t>
 
           <t hangText="- MT (4 bits)">Metric Type. This document defines a
           default metric type as value 0, indicating this is the normalized
@@ -1014,28 +982,7 @@
 	  </t>
 	  <t>The RR can append the NO-ADVERTISE well-known community to the BGP UPDATE message with the Metadata Path Attribute when forwarding it to the ingress routers. This signals to the ingress nodes that the associated route's Metadata Path Attribute should not be further advertised beyond their scope. This precautionary measure ensures that the receiver of the BGP UPDATE message refrains from forwarding the received update to its peers, preventing the undesired propagation of the information carried by the Metadata Path Attribute.
 	  </t>
-	  <t>In addition, the Service Metadata propagation can be further constrained to a set of ingress nodes that are specifically interested in the services. For example, for each registered low-latency Service, BGP RT Constrained Distribution <xref target="RFC4684"/> can be used to form a Group
-      interested in the Service. The "Service ID", an IP address prefix, is
-      the Route Target. When an ingress router receives the first packet of a
-      flow destined to a Service ID (i.e., IP prefix), the ingress router
-      sends a BGP UPDATE that advertises the Route Target membership NLRI per
-      <xref target="RFC4684"/>. The ingress router must assign a Timer for the
-      Service ID, as the UE that uses the Service ID might move away. Upon
-      receiving a packet destined for the Service ID, the ingress router must
-      refresh the Timer. The ingress router must send a BGP Withdraw UPDATE
-      for the Service ID upon expiration of the Timer.</t>
-      <!-- XXX JMH - this text regarding RT-Constrain is very confusing.  RTC
-      operates on BGP routes having route target extended communities.  This
-      document isn't suggesting to use the existing route targets defined in
-      RFC 4360 and using that type/subtype is probably inappropriate.  It'd be
-      better to define a new extended community for this feature. 
 
-      Additionally it's not clear what these timers are and how they interact
-      with service ids. -->
-
-      <t><xref target="RFC4684"/>specifies SAFI=132 for the Route Target
-      membership NLRI Advertisements.</t>
-	  
 	  <section title = "AS-Scope SubTLV">
 	  <t>To address the potential issue where the NO-ADVERTISE well-known community of the BGP UPDATE message can be dropped by some routers, a new AS-Scope Sub-TLV can be included in the Metadata Path Attribute to prevent the Metadata Path Attribute from being leaked to unintended Autonomous Systems (ASes). The AS-Scope Sub-TLV will enforce stricter control over the propagation of the metadata by associating it with specific AS numbers.</t>
 	          <figure anchor="AS-Scope Sub-TLV"
@@ -1050,14 +997,15 @@
 ]]></artwork>
         </figure>
 	  <list style="hanging">
-          <t hangText="- AS-Scope Sub-Type (16 bits):">AS-Scope Sub-type=7 (specified in this document).</t>
+	  <t hangText="- AS-Scope Sub-Type (16 bits):"> 7 (specified in this
+	  document).</t>
 
           <t hangText="- Length (8 bits)">Specifies the total length in
           octets, excluding the sub-Type and the length field. The Length is 6
           for the AS-Scope Sub-Type.</t>
 
-	  <!-- XXX JMH need the usual text about the reserved value contentss. -->
-          <t hangText="- Reserved (8 bits):">Reserved for future use.</t>
+	  <t hangText="- Reserved (8 bits):">These bits are reserved for future
+	  use and MUST be set to zero.</t>
 
           <t hangText="- In-Scope AS-Value (32 bits):">AS value that is recognized by the BGP speaker in the domain.</t>
         </list>
@@ -1067,9 +1015,7 @@
 
         <t> - AS Recognition: The router will check the AS value in the AS-Scope Sub-TLV.</t>
 
-        <t> - If the AS value matches the local AS or a recognized AS in its configuration, the router will process the update as usual. If the AS value does not match or is not recognized, the router MUST drop the BGP UPDATE message containing the AS-Scope Sub-TLV.</t>
-	<!-- XXX JMH the desired value here is RFC 7606 style "treat as
-	withdraw", not "drop the update" -->
+        <t> - If the AS value matches the local AS or a recognized AS in its configuration, the router will process the update as usual. If the AS value does not match or is not recognized, the router SHOULD NOT process the Metadata Path Attribute values in the BGP UDPATE and SHOULD NOT propagate the received BGP UPDATE to other nodes.  I.e., treat-as-withdraw behavior will be used.</t>
 		
 	<!-- XXX JMH - I think you can drop the forwaring rules section. The
 	motivation is explained previously.
@@ -1105,8 +1051,6 @@
       <t>This behavior is analogous to the impacts observed with RSVP auto-bandwidth, which can introduce considerable instability within a network. Such route churn can propagate through the network, causing a cascade of UPDATEs and potential route flaps, thereby affecting overall network stability and performance.</t>
 
 	  <t>To mitigate these effects, network operators should carefully manage the advertisement intervals of these dynamic metrics, ensuring they are set to avoid unnecessary churn. The default minimum interval for metrics change advertisement, set at 30 seconds, is designed to balance responsiveness with stability. However, in scenarios with higher sensitivity to route stability, operators may consider increasing this interval further to reduce the frequency of UPDATEs.</t>
-
-	  <t> Furthermore, operators should implement robust filtering policies to control the propagation of changes and minimize the impact on dependent routes. By acknowledging and planning for these broader impacts, the mechanism can be deployed more effectively, ensuring optimal performance without compromising network stability.</t>
 
 	  <t>Significant load changes at EC data centers can be triggered by
       short-term gatherings of UEs, like conventions, lasting a few hours or
@@ -1148,7 +1092,7 @@
     <section title="Manageability Considerations">
       <t>The edge service Metadata described in this document are only
       intended for propagating between ingress and egress routers of one
-      single BGP Administrative Domain [RFC1136]. A single BGP Administrative Domain can consist of one AS or multiple ASes.</t>
+      single BGP Administrative Domain <xref target="RFC1136"/>. A single BGP Administrative Domain can consist of one AS or multiple ASes.</t>
 	<t>Only
       the selective services by UEs are considered as 5G edge services. The 5G
       LDN is usually managed by one operator, even though the routers can be
@@ -1371,8 +1315,6 @@
 
       <?rfc include="reference.RFC.4456"?>
 
-      <?rfc include="reference.RFC.4684"?>
-
       <?rfc include="reference.RFC.8174"?>
 
       <?rfc include="reference.RFC.8799"?>
@@ -1406,7 +1348,7 @@
     </references>
 	<section title = "Service Delay Prediction Based on Load Measurement">
 	  <t>When data centers detailed running status are not exposed to the
-	  network operator, historic traffic patterns through the egress nodes
+	  network operator, historic traffic patterns through the egress routers
 	  can be utilized to predict the load to a specific service. For
 	  example, when traffic volume to one service at one data center
 	  suddenly increases a huge percentage compared with the past 24 hours
@@ -1460,7 +1402,7 @@
 	  in selecting the optimal paths.</t>
 	</section>
 	    <section title="Service Metadata Influenced Decision Process">
-      <section title="Egress Node Behavior">
+      <section title="Egress Router Behavior">
         <t>Multiple instances of the same service could be attached to one
         egress router. When all instances of the same service are grouped
         behind one application layer load balancer, they appear as one single
